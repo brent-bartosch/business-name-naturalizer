@@ -51,19 +51,44 @@ export async function getCachedNaturalName(originalName) {
  * @returns {Promise<Object>} Map of original_name -> natural_name
  */
 export async function getCachedNaturalNames(originalNames) {
-  const { data, error } = await supabase
-    .from('business_name_naturalizations')
-    .select('original_name, natural_name')
-    .in('original_name', originalNames);
+  try {
+    // Skip if no names to look up
+    if (!originalNames || originalNames.length === 0) {
+      return {};
+    }
 
-  if (error) throw error;
+    console.log(`Looking up ${originalNames.length} names in cache...`);
+    
+    const { data, error } = await supabase
+      .from('business_name_naturalizations')
+      .select('original_name, natural_name')
+      .in('original_name', originalNames);
 
-  const cache = {};
-  (data || []).forEach(row => {
-    cache[row.original_name] = row.natural_name;
-  });
+    if (error) {
+      console.error('Database error in getCachedNaturalNames:', error);
+      console.error('Error code:', error.code);
+      console.error('Error details:', error.details);
+      // Don't throw, just return empty cache to continue processing
+      return {};
+    }
 
-  return cache;
+    const cache = {};
+    if (data && data.length > 0) {
+      data.forEach(row => {
+        cache[row.original_name] = row.natural_name;
+      });
+      console.log(`Found ${data.length} cached names`);
+    } else {
+      console.log('No cached names found');
+    }
+
+    return cache;
+  } catch (err) {
+    console.error('Failed to get cached names:', err.message);
+    console.error('Error stack:', err.stack);
+    // Return empty cache on error to continue processing
+    return {};
+  }
 }
 
 /**
@@ -142,7 +167,7 @@ export async function getProcessingStats() {
     .select('*', { count: 'exact', head: true })
     .is('natural_name', null)
     .not('google_name', 'is', null)
-    .gte('created_at', '2025-05-01');
+    .gte('added_at', '2025-05-01');
   
   stats.high_priority_pending = highPriorityCount;
 

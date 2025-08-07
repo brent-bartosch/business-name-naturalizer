@@ -10,7 +10,8 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 const ENABLE_CRON = process.env.ENABLE_CRON === 'true';
-const ENABLE_WEB_SERVER = process.env.ENABLE_WEB_SERVER === 'true';
+// Default to true if not explicitly set to 'false' (for Render compatibility)
+const ENABLE_WEB_SERVER = process.env.ENABLE_WEB_SERVER !== 'false';
 const CRON_SCHEDULE = process.env.CRON_SCHEDULE || '0 */2 * * *'; // Every 2 hours
 
 // Middleware
@@ -43,9 +44,26 @@ async function start() {
   console.log('🚀 Business Name Naturalization Service');
   console.log('=====================================');
   
+  // Add startup delay on Render for network stabilization
+  if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
+    console.log('⏳ Waiting 5 seconds for environment to stabilize...');
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  }
+  
   const args = process.argv.slice(2);
   const mode = args.find(arg => arg.startsWith('--mode='))?.split('=')[1];
   const limit = parseInt(args.find(arg => arg.startsWith('--limit='))?.split('=')[1] || '0');
+  
+  // Log environment variables status (without exposing sensitive data)
+  console.log('Environment check:');
+  console.log(`  NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+  console.log(`  PORT: ${process.env.PORT || 'not set'}`);
+  console.log(`  ENABLE_CRON: ${process.env.ENABLE_CRON || 'not set'}`);
+  console.log(`  ENABLE_WEB_SERVER: ${process.env.ENABLE_WEB_SERVER || 'not set'}`);
+  console.log(`  SUPABASE_URL: ${process.env.SUPABASE_URL ? '✓ set' : '✗ not set'}`);
+  console.log(`  SUPABASE_SERVICE_ROLE_KEY: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? '✓ set' : '✗ not set'}`);
+  console.log(`  OPEN_ROUTER_API_KEY: ${process.env.OPEN_ROUTER_API_KEY ? '✓ set' : '✗ not set'}`);
+  console.log(`  SLACK_WEBHOOK_URL: ${process.env.SLACK_WEBHOOK_URL ? '✓ set' : '✗ not set'}`);
   
   try {
     // Send startup notification
