@@ -128,6 +128,67 @@ router.post('/test', async (req, res) => {
 });
 
 /**
+ * Process priority category records
+ */
+router.post('/process-priority', async (req, res) => {
+  try {
+    const { categories, limit = 50 } = req.body;
+    
+    if (!categories || !Array.isArray(categories)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Categories array is required'
+      });
+    }
+    
+    console.log(`🔴 Priority processing for categories: ${categories.join(', ')}`);
+    
+    // Import the priority processing function
+    const { processPriorityCategories } = await import('../services/batch.js');
+    
+    // Process synchronously for immediate feedback
+    const result = await processPriorityCategories(categories, limit);
+    
+    res.json({
+      success: true,
+      processed: result.processed,
+      remaining: result.remaining,
+      cached: result.cached,
+      message: `Processed ${result.processed} priority records`
+    });
+    
+  } catch (error) {
+    console.error('Priority processing error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Get priority category stats
+ */
+router.get('/stats/priority-categories', async (req, res) => {
+  try {
+    const { getPriorityCategoryStats } = await import('../db/queries.js');
+    const stats = await getPriorityCategoryStats();
+    
+    res.json({
+      success: true,
+      count: stats.pending_count,
+      categories: stats.categories
+    });
+  } catch (error) {
+    console.error('Error getting priority stats:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * Webhook endpoint for external triggers (e.g., from Supabase)
  */
 router.post('/webhook', async (req, res) => {

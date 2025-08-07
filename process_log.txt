@@ -1,0 +1,149 @@
+🚀 Fast bulk processing of all high-priority records
+================================================
+Initial stats:
+        "naturalized_records": 1008,
+        "pending_records": 217132,
+        "cached_names": 1115
+
+📊 Wave 1 of 50 (processing up to 3000 records)
+🌊 Starting wave of 3 concurrent batches...
+  ✓ Batch 2 completed
+  ✓ Batch 3 completed
+  ✓ Batch 1 completed
+  Wave complete
+  ⏳ Waiting 15 seconds...
+
+📊 Wave 2 of 50 (processing up to 3000 records)
+🌊 Starting wave of 3 concurrent batches...
+  ✓ Batch 2 completed
+  ✓ Batch 1 completed
+  ✓ Batch 3 completed
+  Wave complete
+  ⏳ Waiting 15 seconds...
+
+📊 Wave 3 of 50 (processing up to 3000 records)
+🌊 Starting wave of 3 concurrent batches...
+  ✓ Batch 3 completed
+  ✓ Batch 1 completed
+  ✓ Batch 2 completed
+  Wave complete
+  ⏳ Waiting 15 seconds...
+
+📊 Wave 4 of 50 (processing up to 3000 records)
+🌊 Starting wave of 3 concurrent batches...
+  ✓ Batch 2 completed
+  ✓ Batch 1 completed
+  ✓ Batch 3 completed
+  Wave complete
+  ⏳ Waiting 15 seconds...
+
+📊 Wave 5 of 50 (processing up to 3000 records)
+🌊 Starting wave of 3 concurrent batches...
+  ✓ Batch 2 completed
+  ✓ Batch 1 completed
+  ✓ Batch 3 completed
+  Wave complete
+  ⏳ Waiting 15 seconds...
+
+Progress check after wave 5:
+        "naturalized_records": 1108,
+        "pending_records": 217032,
+        "cached_names": 1217
+
+📊 Wave 6 of 50 (processing up to 3000 records)
+🌊 Starting wave of 3 concurrent batches...
+  ✓ Batch 1 completed
+  ✓ Batch 3 completed
+  ✓ Batch 2 completed
+  Wave complete
+  ⏳ Waiting 15 seconds...
+
+📊 Wave 7 of 50 (processing up to 3000 records)
+🌊 Starting wave of 3 concurrent batches...
+  ✓ Batch 1 completed
+  ✓ Batch 3 completed
+  ✓ Batch 2 completed
+  Wave complete
+  ⏳ Waiting 15 seconds...
+
+📊 Wave 8 of 50 (processing up to 3000 records)
+🌊 Starting wave of 3 concurrent batches...
+  ✓ Batch 1 completed
+  ✓ Batch 2 completed
+  ✓ Batch 3 completed
+  Wave complete
+  ⏳ Waiting 15 seconds...
+
+📊 Wave 9 of 50 (processing up to 3000 records)
+🌊 Starting wave of 3 concurrent batches...
+  ✓ Batch 1 completed
+  ✓ Batch 2 completed
+  ✓ Batch 3 completed
+  Wave complete
+  ⏳ Waiting 15 seconds...
+
+📊 Wave 10 of 50 (processing up to 3000 records)
+🌊 Starting wave of 3 concurrent batches...
+  ✓ Batch 3 completed
+  ✓ Batch 1 completed
+  ✓ Batch 2 completed
+  Wave complete
+  ⏳ Waiting 15 seconds...
+
+Progress check after wave 10:
+        "naturalized_records": 1108,
+        "pending_records": 217032,
+        "cached_names": 1333
+
+📊 Wave 11 of 50 (processing up to 3000 records)
+🌊 Starting wave of 3 concurrent batches...
+  ✓ Batch 2 completed
+  ✓ Batch 1 completed
+  ✓ Batch 3 completed
+  Wave complete
+  ⏳ Waiting 15 seconds...
+
+📊 Wave 12 of 50 (processing up to 3000 records)
+🌊 Starting wave of 3 concurrent batches...
+  ✓ Batch 1 completed
+  ✓ Batch 3 completed
+  ✓ Batch 2 completed
+  Wave complete
+  ⏳ Waiting 15 seconds...
+
+📊 Wave 13 of 50 (processing up to 3000 records)
+🌊 Starting wave of 3 concurrent batches...
+  ✓ Batch 3 completed
+  ✓ Batch 2 completed
+  ✓ Batch 1 completed
+  Wave complete
+  ⏳ Waiting 15 seconds...
+
+📊 Wave 14 of 50 (processing up to 3000 records)
+🌊 Starting wave of 3 concurrent batches...
+  ✓ Batch 3 completed
+  ✓ Batch 2 completed
+  ✓ Batch 1 completed
+  Wave complete
+  ⏳ Waiting 15 seconds...
+
+📊 Wave 15 of 50 (processing up to 3000 records)
+🌊 Starting wave of 3 concurrent batches...
+  ✓ Batch 2 completed
+  ✓ Batch 3 completed
+  ✓ Batch 1 completed
+  Wave complete
+  ⏳ Waiting 15 seconds...
+
+Progress check after wave 15:
+        "naturalized_records": 1113,
+        "pending_records": 217027,
+        "cached_names": 1438
+
+📊 Wave 16 of 50 (processing up to 3000 records)
+🌊 Starting wave of 3 concurrent batches...
+  ✓ Batch 3 completed
+  ✓ Batch 2 completed
+  ✓ Batch 1 completed
+  Wave complete
+  ⏳ Waiting 15 seconds...

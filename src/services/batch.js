@@ -12,6 +12,112 @@ const MAX_RECORDS_PER_RUN = parseInt(process.env.MAX_RECORDS_PER_RUN) || 1000;
  * @param {Object} options - Processing options
  * @returns {Promise<Object>} Processing statistics
  */
+/**
+ * Process priority category records
+ * @param {Array<string>} categories - Categories to process
+ * @param {number} limit - Maximum records to process
+ * @returns {Promise<Object>} Processing result
+ */
+export async function processPriorityCategories(categories, limit = 50) {
+  const startTime = Date.now();
+  const stats = {
+    processed: 0,
+    naturalized: 0,
+    from_cache: 0,
+    api_calls: 0,
+    cached: 0,
+    remaining: 0,
+    errors: []
+  };
+
+  try {
+    console.log(`🔴 Processing priority categories: ${categories.join(', ')}`);
+    
+    // Get records for specific categories
+    const records = await db.getRecordsByCategories(categories, limit);
+    
+    if (records.length === 0) {
+      console.log('✅ No priority records to process');
+      return stats;
+    }
+
+    console.log(`📊 Found ${records.length} priority records`);
+    
+    // Extract unique business names
+    const uniqueNames = [...new Set(records.map(r => r.google_name))];
+    console.log(`🔍 ${uniqueNames.length} unique business names`);
+
+    // Check cache
+    const cachedNames = await db.getCachedNaturalNames(uniqueNames);
+    const uncachedNames = uniqueNames.filter(name => !cachedNames[name]);
+    
+    stats.from_cache = Object.keys(cachedNames).length;
+    console.log(`💾 Found ${stats.from_cache} names in cache`);
+    
+    // Process uncached names with AI
+    if (uncachedNames.length > 0) {
+      console.log(`🤖 Processing ${uncachedNames.length} names with AI...`);
+      const naturalizedMap = await naturalizeNames(uncachedNames);
+      
+      // Save to cache
+      const newCacheEntries = [];
+      for (const [original, natural] of Object.entries(naturalizedMap)) {
+        if (natural) {
+          newCacheEntries.push({ original_name: original, natural_name: natural });
+        }
+      }
+      
+      if (newCacheEntries.length > 0) {
+        await db.saveToCache(newCacheEntries);
+        stats.cached = newCacheEntries.length;
+      }
+      
+      // Combine with cached names
+      Object.assign(cachedNames, naturalizedMap);
+      stats.api_calls = uncachedNames.length;
+    }
+    
+    // Update records with natural names
+    const updatePromises = [];
+    for (const record of records) {
+      const naturalName = cachedNames[record.google_name];
+      if (naturalName) {
+        updatePromises.push(
+          db.updateNaturalName(record.place_id, naturalName)
+            .then(() => {
+              stats.naturalized++;
+              return true;
+            })
+            .catch(err => {
+              console.error(`Failed to update ${record.place_id}:`, err.message);
+              stats.errors.push({ place_id: record.place_id, error: err.message });
+              return false;
+            })
+        );
+      }
+    }
+    
+    await Promise.all(updatePromises);
+    stats.processed = records.length;
+    
+    // Get remaining count
+    const remainingStats = await db.getPriorityCategoryStats(categories);
+    stats.remaining = remainingStats.pending_count;
+    
+    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`✅ Priority processing complete in ${duration}s`);
+    console.log(`   Processed: ${stats.processed}, Naturalized: ${stats.naturalized}`);
+    console.log(`   Remaining: ${stats.remaining}`);
+    
+    return stats;
+    
+  } catch (error) {
+    console.error('Priority processing error:', error);
+    stats.errors.push({ general: error.message });
+    throw error;
+  }
+}
+
 export async function processBatch(options = {}) {
   const startTime = Date.now();
   const stats = {

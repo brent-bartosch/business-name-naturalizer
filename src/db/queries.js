@@ -16,6 +16,66 @@ export async function getRecordsToProcess(limit = 1000) {
 }
 
 /**
+ * Get records by specific categories
+ * @param {Array<string>} categories - Categories to filter by
+ * @param {number} limit - Maximum number of records to fetch
+ * @returns {Promise<Array>} Array of records needing naturalization
+ */
+export async function getRecordsByCategories(categories, limit = 50) {
+  const { data, error } = await supabase
+    .from('outbound_email_targets')
+    .select('place_id, google_name, primary_category')
+    .in('primary_category', categories)
+    .is('natural_name', null)
+    .limit(limit);
+
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * Get stats for priority categories
+ * @param {Array<string>} categories - Categories to check (optional)
+ * @returns {Promise<Object>} Stats object
+ */
+export async function getPriorityCategoryStats(categories = null) {
+  let query = supabase
+    .from('outbound_email_targets')
+    .select('primary_category', { count: 'exact', head: true })
+    .is('natural_name', null);
+  
+  if (categories) {
+    query = query.in('primary_category', categories);
+  } else {
+    // Default priority categories
+    query = query.in('primary_category', [
+      'Thrift store',
+      'Used book store',
+      'Vintage clothing store',
+      'Used clothing store',
+      'Consignment shop',
+      'Second hand store'
+    ]);
+  }
+
+  const { count, error } = await query;
+  
+  if (error) throw error;
+  
+  return {
+    pending_count: count || 0,
+    categories: categories || [
+      'Thrift store',
+      'Used book store',
+      'Vintage clothing store',
+      'Used clothing store',
+      'Consignment shop',
+      'Second hand store'
+    ]
+  };
+}
+
+/**
  * Check if a natural name already exists in cache
  * @param {string} originalName - The original business name
  * @returns {Promise<string|null>} The cached natural name or null
