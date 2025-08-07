@@ -169,26 +169,61 @@ export async function saveToCache(names) {
 }
 
 /**
+ * Update a single record with natural name
+ * @param {string} place_id - The place ID to update
+ * @param {string} natural_name - The natural name
+ */
+export async function updateNaturalName(place_id, natural_name) {
+  const { data, error } = await supabase
+    .from('outbound_email_targets')
+    .update({ natural_name })
+    .eq('place_id', place_id);
+  
+  if (error) {
+    console.error(`Failed to update ${place_id}:`, error.message);
+    throw error;
+  }
+  
+  return data;
+}
+
+/**
  * Update records with natural names
  * @param {Array<{place_id: string, natural_name: string}>} updates - Records to update
  */
 export async function updateRecordsWithNaturalNames(updates) {
   // Process in chunks of 100 to avoid hitting Supabase limits
   const chunkSize = 100;
+  let totalUpdated = 0;
   
   for (let i = 0; i < updates.length; i += chunkSize) {
     const chunk = updates.slice(i, i + chunkSize);
     
     // Use Promise.all for parallel updates within chunk
-    await Promise.all(
-      chunk.map(({ place_id, natural_name }) =>
-        supabase
-          .from('outbound_email_targets')
-          .update({ natural_name })
-          .eq('place_id', place_id)
-      )
+    const results = await Promise.all(
+      chunk.map(async ({ place_id, natural_name }) => {
+        try {
+          const { data, error } = await supabase
+            .from('outbound_email_targets')
+            .update({ natural_name })
+            .eq('place_id', place_id);
+          
+          if (error) {
+            console.error(`Failed to update ${place_id}:`, error.message);
+            return false;
+          }
+          return true;
+        } catch (err) {
+          console.error(`Error updating ${place_id}:`, err.message);
+          return false;
+        }
+      })
     );
+    
+    totalUpdated += results.filter(r => r).length;
   }
+  
+  return totalUpdated;
 }
 
 /**
