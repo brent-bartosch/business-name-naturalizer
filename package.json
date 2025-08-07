@@ -1,0 +1,30 @@
+{
+  "name": "naturalize-business-names-service",
+  "version": "1.0.0",
+  "description": "Service to naturalize business names for SmartLead email campaigns using AI",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "migrate": "node scripts/migrate.js",
+    "process": "node src/index.js --mode=batch",
+    "test": "node src/index.js --mode=test --limit=10"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "express": "^4.18.2",
+    "node-cron": "^3.0.3",
+    "dotenv": "^16.3.1",
+    "axios": "^1.6.2",
+    "p-limit": "^5.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "",
+  "license": "MIT"
+}

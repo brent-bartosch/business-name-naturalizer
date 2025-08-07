@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: naturalize-business-names
+    env: node
+    region: oregon
+    plan: starter
+    rootDir: smartlead/naturalize-service
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: SLACK_WEBHOOK_URL
+        sync: false
+      - key: ENABLE_CRON
+        value: true
+      - key: ENABLE_WEB_SERVER
+        value: true
+      - key: ENABLE_SLACK_NOTIFICATIONS
+        value: true
+      - key: BATCH_SIZE
+        value: 8
+      - key: DELAY_BETWEEN_CALLS
+        value: 1500
+      - key: MAX_RETRIES
+        value: 3
+      - key: MAX_RECORDS_PER_RUN
+        value: 1000
+      - key: CRON_SCHEDULE
+        value: "0 */2 * * *"
+    healthCheckPath: /api/health
