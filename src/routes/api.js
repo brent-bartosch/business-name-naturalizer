@@ -1,7 +1,6 @@
 import express from 'express';
-import processor from '../services/processor.js';
 import { processBatch, processTriggeredRecords, testProcessing } from '../services/batch.js';
-import { getProcessingStats, getPriorityCategoryStats } from '../db/queries.js';
+import { getProcessingStats } from '../db/queries.js';
 import { testConnection } from '../services/openrouter.js';
 
 const router = express.Router();
@@ -50,8 +49,11 @@ router.post('/process', async (req, res) => {
       timestamp: new Date().toISOString()
     });
     
-    // Process in background using new processor
-    processor.processUniqueNames(null, limit).catch(error => {
+    // Process in background
+    processBatch({ 
+      limit, 
+      trigger: 'api' 
+    }).catch(error => {
       console.error('Background processing error:', error);
     });
     
@@ -107,8 +109,8 @@ router.post('/test', async (req, res) => {
       });
     }
     
-    // Run test processing using new processor
-    const result = await processor.processUniqueNames(null, limit);
+    // Run test processing
+    const result = await testProcessing(limit);
     
     res.json({
       success: true,
@@ -126,7 +128,7 @@ router.post('/test', async (req, res) => {
 });
 
 /**
- * Process priority category records - UPDATED TO USE NEW PROCESSOR
+ * Process priority category records
  */
 router.post('/process-priority', async (req, res) => {
   try {
@@ -141,25 +143,18 @@ router.post('/process-priority', async (req, res) => {
     
     console.log(`🔴 Priority processing for categories: ${categories.join(', ')}`);
     
-    // Use the new processor's priority categories method
-    const result = await processor.processPriorityCategories(categories, limit);
+    // Import the priority processing function
+    const { processPriorityCategories } = await import('../services/batch.js');
     
-    // Handle API credit exhaustion
-    if (!result.success && result.code === 'CREDITS_EXHAUSTED') {
-      return res.status(402).json({
-        success: false,
-        error: result.error,
-        code: result.code
-      });
-    }
+    // Process synchronously for immediate feedback
+    const result = await processPriorityCategories(categories, limit);
     
     res.json({
-      success: result.success,
-      processed: result.processed || 0,
-      remaining: result.remaining || 0,
-      cached: result.cached || 0,
-      records_updated: result.records_updated || 0,
-      message: result.message || `Processed ${result.processed} priority records`
+      success: true,
+      processed: result.processed,
+      remaining: result.remaining,
+      cached: result.cached,
+      message: `Processed ${result.processed} priority records`
     });
     
   } catch (error) {
@@ -176,6 +171,7 @@ router.post('/process-priority', async (req, res) => {
  */
 router.get('/stats/priority-categories', async (req, res) => {
   try {
+    const { getPriorityCategoryStats } = await import('../db/queries.js');
     const stats = await getPriorityCategoryStats();
     
     res.json({
@@ -214,8 +210,11 @@ router.post('/webhook', async (req, res) => {
       message: 'Webhook received, processing started'
     });
     
-    // Process in background using new processor
-    processor.processUniqueNames(null, 100).catch(error => {
+    // Process in background
+    processBatch({ 
+      trigger: 'webhook',
+      event 
+    }).catch(error => {
       console.error('Webhook processing error:', error);
     });
     
