@@ -6,8 +6,10 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables from the correct location
-dotenv.config({ path: path.join(__dirname, '../../.env') });
+// Load environment variables - from file in development, from Render env in production
+if (process.env.NODE_ENV !== 'production' && !process.env.RENDER) {
+  dotenv.config({ path: path.join(__dirname, '../../.env') });
+}
 
 // Verify configuration
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
