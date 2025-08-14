@@ -8,19 +8,25 @@ import supabase from './client.js';
  * @returns {Promise<Array>} Array of records needing naturalization
  */
 export async function getUncachedRecordsByCategories(categories, limit = 50) {
-  // First, get all unique names that need processing
+  console.log(`🔍 Finding uncached records for categories: ${categories.join(', ')} (limit: ${limit})`);
+  
+  // First, get ALL unique names that need processing for these categories
+  // Don't limit here - we need to see all pending to find uncached ones
   const { data: pendingRecords, error: pendingError } = await supabase
     .from('outbound_email_targets')
     .select('google_name')
     .in('primary_category', categories)
-    .is('natural_name', null)
-    .limit(limit * 2); // Get more to find uncached ones
+    .is('natural_name', null);
 
   if (pendingError) throw pendingError;
-  if (!pendingRecords || pendingRecords.length === 0) return [];
+  if (!pendingRecords || pendingRecords.length === 0) {
+    console.log('No pending records found for these categories');
+    return [];
+  }
 
   // Get unique names
   const uniqueNames = [...new Set(pendingRecords.map(r => r.google_name))];
+  console.log(`📊 Found ${pendingRecords.length} pending records with ${uniqueNames.length} unique names`);
   
   // Check which names are already in cache
   const { data: cachedNames, error: cacheError } = await supabase
@@ -33,21 +39,39 @@ export async function getUncachedRecordsByCategories(categories, limit = 50) {
   const cachedSet = new Set((cachedNames || []).map(c => c.original_name));
   const uncachedNames = uniqueNames.filter(name => !cachedSet.has(name));
   
+  console.log(`💾 Cache status: ${cachedSet.size} cached, ${uncachedNames.length} uncached`);
+  
   if (uncachedNames.length === 0) {
-    console.log('All pending names are already cached');
-    return [];
+    console.log('⚠️ All pending names are already cached - returning cached names for update');
+    // If all are cached, still return some records so they can be updated with cached values
+    const namesToProcess = uniqueNames.slice(0, limit);
+    const { data, error } = await supabase
+      .from('outbound_email_targets')
+      .select('place_id, google_name, primary_category')
+      .in('primary_category', categories)
+      .in('google_name', namesToProcess)
+      .is('natural_name', null)
+      .limit(limit);
+    
+    if (error) throw error;
+    return data || [];
   }
 
-  // Now get the actual records for uncached names only
+  // Get records for uncached names first, up to limit
+  const namesToProcess = uncachedNames.slice(0, limit);
+  console.log(`🎯 Fetching ${namesToProcess.length} records with uncached names`);
+  
   const { data, error } = await supabase
     .from('outbound_email_targets')
     .select('place_id, google_name, primary_category')
     .in('primary_category', categories)
-    .in('google_name', uncachedNames.slice(0, limit))
+    .in('google_name', namesToProcess)
     .is('natural_name', null)
     .limit(limit);
 
   if (error) throw error;
+  
+  console.log(`✅ Returning ${(data || []).length} records for processing`);
   return data || [];
 }
 
