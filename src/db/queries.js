@@ -283,7 +283,7 @@ export async function logProcessingResult(details) {
   const { error } = await supabase
     .from('process_log')
     .insert({
-      process_name: 'business_name_naturalization',
+      process_type: 'business_name_naturalization',
       status: details.status || 'completed',
       details: details
     });
@@ -300,7 +300,7 @@ export async function checkIfNaturalizationNeeded() {
   const { data, error } = await supabase
     .from('process_log')
     .select('details')
-    .eq('process_name', 'naturalization_trigger')
+    .eq('process_type', 'naturalization_trigger')
     .eq('status', 'pending')
     .order('created_at', { ascending: false })
     .limit(1)
@@ -315,7 +315,7 @@ export async function checkIfNaturalizationNeeded() {
     await supabase
       .from('process_log')
       .update({ status: 'processing' })
-      .eq('process_name', 'naturalization_trigger')
+      .eq('process_type', 'naturalization_trigger')
       .eq('status', 'pending');
   }
 
