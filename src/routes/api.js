@@ -1,5 +1,6 @@
 import express from 'express';
 import { processBatch, processTriggeredRecords, testProcessing } from '../services/batch.js';
+import { processConcurrently, continuousProcessing } from '../services/concurrent-processor.js';
 import { getProcessingStats } from '../db/queries.js';
 import { testConnection } from '../services/openrouter.js';
 
@@ -181,6 +182,86 @@ router.get('/stats/priority-categories', async (req, res) => {
     });
   } catch (error) {
     console.error('Error getting priority stats:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Process records concurrently with high throughput
+ */
+router.post('/process-concurrent', async (req, res) => {
+  try {
+    const { limit = 5000, concurrency = 10 } = req.body;
+    
+    console.log(`🚀 Starting concurrent processing: ${concurrency} parallel requests, ${limit} records`);
+    
+    // Return immediate response
+    res.json({
+      success: true,
+      message: 'Concurrent processing started',
+      concurrency,
+      limit,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Process in background
+    processConcurrently({ limit, concurrency })
+      .then(stats => {
+        console.log('✅ Concurrent processing complete:', stats);
+      })
+      .catch(error => {
+        console.error('❌ Concurrent processing error:', error);
+      });
+    
+  } catch (error) {
+    console.error('Error starting concurrent processing:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Start continuous processing loop
+ */
+router.post('/process-continuous', async (req, res) => {
+  try {
+    const { 
+      maxIterations = 100,
+      batchSize = 5000,
+      concurrency = 10 
+    } = req.body;
+    
+    console.log(`🔄 Starting continuous processing loop`);
+    console.log(`   Max iterations: ${maxIterations}`);
+    console.log(`   Batch size: ${batchSize}`);
+    console.log(`   Concurrency: ${concurrency}`);
+    
+    // Return immediate response
+    res.json({
+      success: true,
+      message: 'Continuous processing started',
+      maxIterations,
+      batchSize,
+      concurrency,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Start continuous processing in background
+    continuousProcessing({ maxIterations, batchSize, concurrency })
+      .then(stats => {
+        console.log('🏁 Continuous processing complete:', stats);
+      })
+      .catch(error => {
+        console.error('❌ Continuous processing error:', error);
+      });
+    
+  } catch (error) {
+    console.error('Error starting continuous processing:', error);
     res.status(500).json({
       success: false,
       error: error.message
