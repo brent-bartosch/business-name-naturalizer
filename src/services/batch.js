@@ -1,5 +1,6 @@
 import pLimit from 'p-limit';
 import * as db from '../db/queries.js';
+import { getUncachedRecordsByCategories } from '../db/queries_optimized.js';
 import { naturalizeNames } from './openrouter.js';
 import { sendProcessingReport, sendErrorAlert } from './slack.js';
 
@@ -33,8 +34,8 @@ export async function processPriorityCategories(categories, limit = 50) {
   try {
     console.log(`🔴 Processing priority categories: ${categories.join(', ')}`);
     
-    // Get records for specific categories
-    const records = await db.getRecordsByCategories(categories, limit);
+    // Get records for specific categories - prioritizing uncached names
+    const records = await getUncachedRecordsByCategories(categories, limit);
     
     if (records.length === 0) {
       console.log('✅ No priority records to process');
