@@ -29,12 +29,20 @@ export async function getUncachedRecordsByCategories(categories, limit = 50) {
   console.log(`📊 Found ${pendingRecords.length} pending records with ${uniqueNames.length} unique names`);
   
   // Check which names are already in cache
-  const { data: cachedNames, error: cacheError } = await supabase
-    .from('business_name_naturalizations')
-    .select('original_name')
-    .in('original_name', uniqueNames);
-
-  if (cacheError) throw cacheError;
+  // Handle large arrays by chunking (Supabase has limits on IN operator)
+  const cachedNames = [];
+  const chunkSize = 500; // Safe chunk size for Supabase IN operator
+  
+  for (let i = 0; i < uniqueNames.length; i += chunkSize) {
+    const chunk = uniqueNames.slice(i, i + chunkSize);
+    const { data, error: cacheError } = await supabase
+      .from('business_name_naturalizations')
+      .select('original_name')
+      .in('original_name', chunk);
+    
+    if (cacheError) throw cacheError;
+    if (data) cachedNames.push(...data);
+  }
   
   const cachedSet = new Set((cachedNames || []).map(c => c.original_name));
   const uncachedNames = uniqueNames.filter(name => !cachedSet.has(name));
