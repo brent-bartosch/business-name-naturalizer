@@ -1,6 +1,6 @@
 import pLimit from 'p-limit';
 import * as db from '../db/queries.js';
-import { naturalizeWithAI } from './ai.js';
+import { naturalizeNames } from './openrouter.js';
 
 // Configuration
 const CONCURRENCY = parseInt(process.env.CONCURRENT_REQUESTS) || 10;
@@ -71,8 +71,8 @@ export async function processConcurrently(options = {}) {
               console.log(`🤖 Processing: ${name} (attempt ${attempt})`);
               
               // Call AI to naturalize single name
-              const result = await naturalizeWithAI([name]);
-              const naturalName = result[name] || name;
+              const results = await naturalizeNames([name]);
+              const naturalName = results[0] || name;
               
               naturalizedMap[name] = naturalName;
               stats.api_calls++;

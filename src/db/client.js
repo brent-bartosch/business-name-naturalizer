@@ -30,9 +30,6 @@ const supabase = createClient(
       persistSession: false,
       autoRefreshToken: false,
     },
-    global: {
-      fetch: undefined, // Let Supabase use its default fetch implementation
-    },
     db: {
       schema: 'public'
     },
