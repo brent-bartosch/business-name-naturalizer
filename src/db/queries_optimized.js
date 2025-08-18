@@ -8,15 +8,19 @@ import supabase from './client.js';
  * @returns {Promise<Array>} Array of records needing naturalization
  */
 export async function getUncachedRecordsByCategories(categories, limit = 50) {
-  console.log(`🔍 Finding uncached records for categories: ${categories.join(', ')} (limit: ${limit})`);
+  console.log(`🔍 Finding uncached INDEPENDENT records for categories: ${categories.join(', ')} (limit: ${limit})`);
   
   // First, get ALL unique names that need processing for these categories
-  // Don't limit here - we need to see all pending to find uncached ones
+  // Filter for independent stores only
   const { data: pendingRecords, error: pendingError } = await supabase
     .from('outbound_email_targets')
-    .select('google_name')
+    .select(`
+      google_name,
+      google_maps_bright_data_locations!inner(chain_classification)
+    `)
     .in('primary_category', categories)
-    .is('natural_name', null);
+    .is('natural_name', null)
+    .eq('google_maps_bright_data_locations.chain_classification', 'independent');
 
   if (pendingError) throw pendingError;
   if (!pendingRecords || pendingRecords.length === 0) {
@@ -55,32 +59,57 @@ export async function getUncachedRecordsByCategories(categories, limit = 50) {
     const namesToProcess = uniqueNames.slice(0, limit);
     const { data, error } = await supabase
       .from('outbound_email_targets')
-      .select('place_id, google_name, primary_category')
+      .select(`
+        place_id, 
+        google_name, 
+        primary_category,
+        google_maps_bright_data_locations!inner(chain_classification)
+      `)
       .in('primary_category', categories)
       .in('google_name', namesToProcess)
       .is('natural_name', null)
+      .eq('google_maps_bright_data_locations.chain_classification', 'independent')
       .limit(limit);
     
     if (error) throw error;
-    return data || [];
+    
+    // Flatten the response
+    return (data || []).map(record => ({
+      place_id: record.place_id,
+      google_name: record.google_name,
+      primary_category: record.primary_category
+    }));
   }
 
   // Get records for uncached names first, up to limit
   const namesToProcess = uncachedNames.slice(0, limit);
-  console.log(`🎯 Fetching ${namesToProcess.length} records with uncached names`);
+  console.log(`🎯 Fetching ${namesToProcess.length} INDEPENDENT records with uncached names`);
   
   const { data, error } = await supabase
     .from('outbound_email_targets')
-    .select('place_id, google_name, primary_category')
+    .select(`
+      place_id, 
+      google_name, 
+      primary_category,
+      google_maps_bright_data_locations!inner(chain_classification)
+    `)
     .in('primary_category', categories)
     .in('google_name', namesToProcess)
     .is('natural_name', null)
+    .eq('google_maps_bright_data_locations.chain_classification', 'independent')
     .limit(limit);
 
   if (error) throw error;
   
-  console.log(`✅ Returning ${(data || []).length} records for processing`);
-  return data || [];
+  // Flatten the response to match expected format
+  const flattenedData = (data || []).map(record => ({
+    place_id: record.place_id,
+    google_name: record.google_name,
+    primary_category: record.primary_category
+  }));
+  
+  console.log(`✅ Returning ${flattenedData.length} records for processing`);
+  return flattenedData;
 }
 
 /**

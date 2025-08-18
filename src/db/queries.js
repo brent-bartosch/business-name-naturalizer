@@ -1,22 +1,36 @@
 import supabase from './client.js';
 
 /**
- * Get records that need naturalization
+ * Get records that need naturalization (independent stores only)
  * @param {number} limit - Maximum number of records to fetch
  * @returns {Promise<Array>} Array of records needing naturalization
  */
 export async function getRecordsToProcess(limit = 1000) {
+  // Join with google_maps_bright_data_locations to filter for independents
   const { data, error } = await supabase
-    .from('pending_naturalizations')
-    .select('place_id, google_name, priority')
+    .from('outbound_email_targets')
+    .select(`
+      place_id, 
+      google_name,
+      google_maps_bright_data_locations!inner(chain_classification)
+    `)
+    .is('natural_name', null)
+    .not('google_name', 'is', null)
+    .eq('google_maps_bright_data_locations.chain_classification', 'independent')
     .limit(limit);
 
   if (error) throw error;
-  return data || [];
+  
+  // Flatten the response to match expected format
+  return (data || []).map(record => ({
+    place_id: record.place_id,
+    google_name: record.google_name,
+    priority: 1 // Default priority for independents
+  }));
 }
 
 /**
- * Get records by specific categories
+ * Get records by specific categories (independent stores only)
  * @param {Array<string>} categories - Categories to filter by
  * @param {number} limit - Maximum number of records to fetch
  * @returns {Promise<Array>} Array of records needing naturalization
@@ -24,13 +38,25 @@ export async function getRecordsToProcess(limit = 1000) {
 export async function getRecordsByCategories(categories, limit = 50) {
   const { data, error } = await supabase
     .from('outbound_email_targets')
-    .select('place_id, google_name, primary_category')
+    .select(`
+      place_id, 
+      google_name, 
+      primary_category,
+      google_maps_bright_data_locations!inner(chain_classification)
+    `)
     .in('primary_category', categories)
     .is('natural_name', null)
+    .eq('google_maps_bright_data_locations.chain_classification', 'independent')
     .limit(limit);
 
   if (error) throw error;
-  return data || [];
+  
+  // Flatten the response to match expected format
+  return (data || []).map(record => ({
+    place_id: record.place_id,
+    google_name: record.google_name,
+    primary_category: record.primary_category
+  }));
 }
 
 /**
