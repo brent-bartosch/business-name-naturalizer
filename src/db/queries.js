@@ -6,26 +6,20 @@ import supabase from './client.js';
  * @returns {Promise<Array>} Array of records needing naturalization
  */
 export async function getRecordsToProcess(limit = 1000) {
-  // Join with google_maps_bright_data_locations to filter for independents
+  // Temporarily remove independent filtering to fix processing
   const { data, error } = await supabase
     .from('outbound_email_targets')
-    .select(`
-      place_id, 
-      google_name,
-      google_maps_bright_data_locations!inner(chain_classification)
-    `)
+    .select('place_id, google_name')
     .is('natural_name', null)
     .not('google_name', 'is', null)
-    .eq('google_maps_bright_data_locations.chain_classification', 'independent')
     .limit(limit);
 
   if (error) throw error;
   
-  // Flatten the response to match expected format
   return (data || []).map(record => ({
     place_id: record.place_id,
     google_name: record.google_name,
-    priority: 1 // Default priority for independents
+    priority: 1
   }));
 }
 
