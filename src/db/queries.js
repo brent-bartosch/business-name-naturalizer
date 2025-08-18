@@ -6,21 +6,35 @@ import supabase from './client.js';
  * @returns {Promise<Array>} Array of records needing naturalization
  */
 export async function getRecordsToProcess(limit = 1000) {
-  // Temporarily remove independent filtering to fix processing
-  const { data, error } = await supabase
-    .from('outbound_email_targets')
-    .select('place_id, google_name')
-    .is('natural_name', null)
-    .not('google_name', 'is', null)
-    .limit(limit);
-
-  if (error) throw error;
+  console.log(`🔍 Getting ${limit} records to process...`);
   
-  return (data || []).map(record => ({
-    place_id: record.place_id,
-    google_name: record.google_name,
-    priority: 1
-  }));
+  try {
+    // Use simple direct query that we know works
+    const { data, error } = await supabase
+      .from('outbound_email_targets')
+      .select('place_id, google_name')
+      .is('natural_name', null)
+      .not('google_name', 'is', null)
+      .limit(limit);
+
+    if (error) {
+      console.error('❌ Database error in getRecordsToProcess:', error);
+      throw error;
+    }
+    
+    const records = (data || []).map(record => ({
+      place_id: record.place_id,
+      google_name: record.google_name,
+      priority: 1
+    }));
+    
+    console.log(`✅ Found ${records.length} records to process`);
+    return records;
+    
+  } catch (err) {
+    console.error('❌ Failed to get records:', err.message);
+    throw err;
+  }
 }
 
 /**
@@ -30,20 +44,35 @@ export async function getRecordsToProcess(limit = 1000) {
  * @returns {Promise<Array>} Array of records needing naturalization
  */
 export async function getRecordsByCategories(categories, limit = 50) {
-  const { data, error } = await supabase
-    .from('outbound_email_targets')
-    .select('place_id, google_name, primary_category')
-    .in('primary_category', categories)
-    .is('natural_name', null)
-    .limit(limit);
-
-  if (error) throw error;
+  console.log(`🔍 Getting ${limit} records for categories: ${categories.join(', ')}`);
   
-  return (data || []).map(record => ({
-    place_id: record.place_id,
-    google_name: record.google_name,
-    primary_category: record.primary_category
-  }));
+  try {
+    // Use simple direct query that we know works
+    const { data, error } = await supabase
+      .from('outbound_email_targets')
+      .select('place_id, google_name, primary_category')
+      .in('primary_category', categories)
+      .is('natural_name', null)
+      .limit(limit);
+
+    if (error) {
+      console.error('❌ Database error in getRecordsByCategories:', error);
+      throw error;
+    }
+    
+    const records = (data || []).map(record => ({
+      place_id: record.place_id,
+      google_name: record.google_name,
+      primary_category: record.primary_category
+    }));
+    
+    console.log(`✅ Found ${records.length} records for categories`);
+    return records;
+    
+  } catch (err) {
+    console.error('❌ Failed to get records by categories:', err.message);
+    throw err;
+  }
 }
 
 /**
