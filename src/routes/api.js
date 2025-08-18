@@ -270,6 +270,37 @@ router.post('/process-continuous', async (req, res) => {
 });
 
 /**
+ * Minimal test endpoint that bypasses all complex query logic
+ */
+router.post('/minimal-test', async (req, res) => {
+  try {
+    console.log('🧪 Running minimal test on server...');
+    
+    // Import minimal test function
+    const { default: minimalTest } = await import('../../minimal-test.js');
+    
+    // Run test in background
+    res.json({
+      success: true,
+      message: 'Minimal test started - check logs for results',
+      timestamp: new Date().toISOString()
+    });
+    
+    // Execute test
+    minimalTest().catch(error => {
+      console.error('❌ Minimal test error:', error);
+    });
+    
+  } catch (error) {
+    console.error('Minimal test endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * Webhook endpoint for external triggers (e.g., from Supabase)
  */
 router.post('/webhook', async (req, res) => {
