@@ -11,16 +11,12 @@ export async function getUncachedRecordsByCategories(categories, limit = 50) {
   console.log(`🔍 Finding uncached INDEPENDENT records for categories: ${categories.join(', ')} (limit: ${limit})`);
   
   // First, get ALL unique names that need processing for these categories
-  // Filter for independent stores only
+  // Temporarily remove independent filtering
   const { data: pendingRecords, error: pendingError } = await supabase
     .from('outbound_email_targets')
-    .select(`
-      google_name,
-      google_maps_bright_data_locations!inner(chain_classification)
-    `)
+    .select('google_name')
     .in('primary_category', categories)
-    .is('natural_name', null)
-    .eq('google_maps_bright_data_locations.chain_classification', 'independent');
+    .is('natural_name', null);
 
   if (pendingError) throw pendingError;
   if (!pendingRecords || pendingRecords.length === 0) {
@@ -59,16 +55,10 @@ export async function getUncachedRecordsByCategories(categories, limit = 50) {
     const namesToProcess = uniqueNames.slice(0, limit);
     const { data, error } = await supabase
       .from('outbound_email_targets')
-      .select(`
-        place_id, 
-        google_name, 
-        primary_category,
-        google_maps_bright_data_locations!inner(chain_classification)
-      `)
+      .select('place_id, google_name, primary_category')
       .in('primary_category', categories)
       .in('google_name', namesToProcess)
       .is('natural_name', null)
-      .eq('google_maps_bright_data_locations.chain_classification', 'independent')
       .limit(limit);
     
     if (error) throw error;
@@ -87,16 +77,10 @@ export async function getUncachedRecordsByCategories(categories, limit = 50) {
   
   const { data, error } = await supabase
     .from('outbound_email_targets')
-    .select(`
-      place_id, 
-      google_name, 
-      primary_category,
-      google_maps_bright_data_locations!inner(chain_classification)
-    `)
+    .select('place_id, google_name, primary_category')
     .in('primary_category', categories)
     .in('google_name', namesToProcess)
     .is('natural_name', null)
-    .eq('google_maps_bright_data_locations.chain_classification', 'independent')
     .limit(limit);
 
   if (error) throw error;
