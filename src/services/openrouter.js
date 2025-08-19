@@ -4,7 +4,8 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const MODEL = process.env.OPENROUTER_MODEL || 'anthropic/claude-3.5-sonnet';
+// Switch to a better performing model since DeepSeek isn't naturalizing properly
+const MODEL = process.env.OPENROUTER_MODEL || 'openai/gpt-4o-mini';
 const MAX_RETRIES = parseInt(process.env.MAX_RETRIES) || 3;
 const RETRY_DELAY = 3000; // 3 seconds
 
