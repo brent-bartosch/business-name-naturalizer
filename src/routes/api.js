@@ -3,6 +3,7 @@ import { processBatch, processTriggeredRecords, testProcessing } from '../servic
 import { processConcurrently, continuousProcessing } from '../services/concurrent-processor.js';
 import { getProcessingStats } from '../db/queries.js';
 import { testConnection } from '../services/openrouter.js';
+import supabase from '../db/client.js';
 
 const router = express.Router();
 
@@ -262,6 +263,113 @@ router.post('/process-continuous', async (req, res) => {
     
   } catch (error) {
     console.error('Error starting continuous processing:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Ad hoc processing for urgent leads with specific filters
+ */
+router.post('/process-urgent-leads', async (req, res) => {
+  try {
+    const { limit = 1000 } = req.body;
+    
+    console.log(`🔥 Processing urgent leads: best_email NOT NULL, primary_category = 'Boutique', reference_city NOT NULL`);
+    
+    // Get urgent records with specific filters
+    const { data: urgentRecords, error } = await supabase
+      .from('outbound_email_targets')
+      .select('place_id, google_name, primary_category, reference_city, best_email')
+      .eq('primary_category', 'Boutique')
+      .is('natural_name', null)
+      .not('best_email', 'is', null)
+      .not('reference_city', 'is', null)
+      .limit(limit);
+    
+    if (error) {
+      return res.status(500).json({
+        success: false,
+        error: `Database error: ${error.message}`
+      });
+    }
+    
+    if (!urgentRecords || urgentRecords.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No urgent records found matching criteria',
+        processed: 0
+      });
+    }
+    
+    console.log(`📊 Found ${urgentRecords.length} urgent boutique leads`);
+    
+    // Import processing functions
+    const { naturalizeNames } = await import('../services/openrouter.js');
+    const { updateRecordsWithNaturalNames, saveToCache, getCachedNaturalNames } = await import('../db/queries.js');
+    
+    // Extract unique business names
+    const uniqueNames = [...new Set(urgentRecords.map(r => r.google_name))];
+    console.log(`🔍 ${uniqueNames.length} unique business names to process`);
+    
+    // Check cache first
+    const cachedNames = await getCachedNaturalNames(uniqueNames);
+    const uncachedNames = uniqueNames.filter(name => !cachedNames[name]);
+    
+    console.log(`💾 Found ${Object.keys(cachedNames).length} cached, ${uncachedNames.length} uncached`);
+    
+    // Process uncached names with AI
+    const naturalizedMap = { ...cachedNames };
+    if (uncachedNames.length > 0) {
+      console.log(`🤖 Processing ${uncachedNames.length} new names with DeepSeek...`);
+      const naturalNames = await naturalizeNames(uncachedNames);
+      
+      // Save to cache
+      const cacheEntries = [];
+      for (let i = 0; i < uncachedNames.length; i++) {
+        const originalName = uncachedNames[i];
+        const naturalName = naturalNames[i] || originalName;
+        naturalizedMap[originalName] = naturalName;
+        cacheEntries.push({
+          original_name: originalName,
+          natural_name: naturalName
+        });
+      }
+      
+      if (cacheEntries.length > 0) {
+        await saveToCache(cacheEntries);
+      }
+    }
+    
+    // Update all urgent records
+    const updates = urgentRecords.map(record => ({
+      place_id: record.place_id,
+      natural_name: naturalizedMap[record.google_name] || record.google_name
+    }));
+    
+    const updated = await updateRecordsWithNaturalNames(updates);
+    
+    // Return immediate response
+    res.json({
+      success: true,
+      message: 'Urgent boutique leads processed successfully',
+      processed: updated,
+      total_found: urgentRecords.length,
+      unique_names: uniqueNames.length,
+      from_cache: Object.keys(cachedNames).length,
+      new_naturalizations: uncachedNames.length,
+      sample_records: urgentRecords.slice(0, 3).map(r => ({
+        google_name: r.google_name,
+        natural_name: naturalizedMap[r.google_name],
+        city: r.reference_city,
+        has_email: !!r.best_email
+      }))
+    });
+    
+  } catch (error) {
+    console.error('Urgent processing error:', error);
     res.status(500).json({
       success: false,
       error: error.message
