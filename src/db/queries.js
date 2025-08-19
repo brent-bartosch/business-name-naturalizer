@@ -326,6 +326,7 @@ export async function logProcessingResult(details) {
     .from('process_log')
     .insert({
       process_type: 'business_name_naturalization',
+      source_table: 'outbound_email_targets',
       status: details.status || 'completed',
       details: details
     });
