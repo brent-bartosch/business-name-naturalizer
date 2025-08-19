@@ -21,7 +21,7 @@ export async function naturalizeNames(businessNames, retryCount = 0) {
 For each business name, create a shortened, natural version that would sound appropriate in an email greeting like "Hi [Natural Name],"
 
 RULES:
-1. Remove business type suffixes that aren't part of the actual name (Floral, Party Store, Bookstore, etc.)
+1. Remove business type suffixes that aren't part of the actual name (Boutique, Floral, Party Store, Bookstore, Shop, Store, etc.)
 2. Remove legal entities (LLC, Co., Inc., Corporation, etc.)
 3. Remove "The" prefix in most cases
 4. Remove promotional/descriptive text (hours, locations, "call after", etc.)
@@ -37,6 +37,8 @@ EXAMPLES:
 - "The BookWorm Bookstore & More" → "BookWorm"
 - "North Branch Floral" → "North Branch"
 - "Eye of the Cat‎" → "Eye of the Cat"
+- "Cigi's Boutique" → "Cigi's"
+- "Fashion Boutique NYC" → "Fashion NYC"
 
 Please process these business names and return ONLY the natural versions, one per line, in the same order:
 
@@ -47,6 +49,7 @@ ${businessNames.map((name, i) => `${i + 1}. ${name}`).join('\n')}`;
       OPENROUTER_API_URL,
       {
         model: MODEL,
+        models: [MODEL, 'openai/gpt-3.5-turbo'], // Add fallback model
         messages: [
           {
             role: 'user',
@@ -66,6 +69,11 @@ ${businessNames.map((name, i) => `${i + 1}. ${name}`).join('\n')}`;
       }
     );
 
+    // Log which model was actually used
+    if (response.data.model) {
+      console.log(`📍 Model used: ${response.data.model}`);
+    }
+    
     const content = response.data.choices[0].message.content.trim();
     
     // Parse the response - extract just the natural names
