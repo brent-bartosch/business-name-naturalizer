@@ -1,0 +1,13 @@
+name: TODO to Issue
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan for TODO / FIXME
+        uses: alstr/todo-to-issue-action@v4
+        with:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
